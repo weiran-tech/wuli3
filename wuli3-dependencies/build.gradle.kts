@@ -9,10 +9,12 @@ javaPlatform {
 
 dependencies {
     api(platform("org.springframework.boot:spring-boot-dependencies:3.5.15"))
+    api(platform("com.alibaba.cloud:spring-cloud-alibaba-dependencies:2025.0.0.0"))
     api(platform("com.baomidou:mybatis-plus-bom:3.5.16"))
 
     constraints {
         api("com.kjs.wuli3:wuli3-core:${project.version}")
+        api("com.kjs.wuli3:wuli3-pagination:${project.version}")
         api("com.kjs.wuli3:wuli3-json:${project.version}")
         api("com.kjs.wuli3:wuli3-permission:${project.version}")
         api("com.kjs.wuli3:wuli3-permission-spring-boot-starter:${project.version}")
@@ -51,7 +53,14 @@ dependencies {
         api("org.apache.rocketmq:rocketmq-spring-boot-starter:2.3.4")
         api("org.apache.rocketmq:rocketmq-client-java:5.2.0")
         api("org.apache.dubbo:dubbo-spring-boot-starter:3.3.6")
+        api("org.apache.dubbo:dubbo-config-spring:3.3.6")
         api("org.apache.dubbo:dubbo-registry-nacos:3.3.6")
+        api("com.alibaba.nacos:nacos-client") {
+            version {
+                // Dubbo 3.3.6 的 Nacos 注册中心按 2.5.x 验证；禁止 SCA BOM 静默升级到 Nacos 3.x。
+                strictly("2.5.1")
+            }
+        }
     }
 }
 
