@@ -6,6 +6,7 @@ import com.kjs.wuli3.core.error.model.ErrorCode;
 import com.kjs.wuli3.core.error.model.ErrorSeverity;
 import com.kjs.wuli3.core.error.model.ErrorVisibility;
 import com.kjs.wuli3.core.error.propagation.ErrorCodeCarrier;
+import com.kjs.wuli3.core.error.propagation.ErrorCodePropagator;
 import com.kjs.wuli3.propagation.accessor.InvocationContextAccessor;
 import com.kjs.wuli3.web.error.ErrorAlertContext;
 import com.kjs.wuli3.web.error.ErrorAlertNotifier;
@@ -40,8 +41,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class WebExceptionHandler {
 
+    private static final ErrorCodePropagator ERROR_PROPAGATOR = new ErrorCodePropagator();
+
     private final ApiResponseFactory responseFactory;
     private final InvocationContextAccessor invocationContextAccessor;
+    private final WebResponseProperties responseProperties;
     private final WebErrorStatusResolver webErrorStatusResolver;
     private final ValidationErrorDetailsFactory validationErrorDetailsFactory;
     private final ErrorAlertNotifiers errorAlertNotifiers;
@@ -57,6 +61,7 @@ public class WebExceptionHandler {
             final List<WebErrorMapper> errorMappers) {
         this.responseFactory = responseFactory;
         this.invocationContextAccessor = invocationContextAccessor;
+        this.responseProperties = responseProperties;
         this.webErrorStatusResolver = webErrorStatusResolver;
         this.validationErrorDetailsFactory = new ValidationErrorDetailsFactory(responseProperties);
         this.errorAlertNotifiers = new ErrorAlertNotifiers(errorAlertNotifiers);
@@ -87,6 +92,10 @@ public class WebExceptionHandler {
         final ApiResponse<?> response = ApiResponse.failure(visible, this.requestId(), detail);
         this.alert(ex, semanticError, request, status, visible);
         final HttpHeaders headers = new HttpHeaders();
+        if (this.responseProperties.isErrorHeaderPropagationEnabled()) {
+            final ErrorCodeCarrier propagation = this.responseFactory.resolvePropagation(semanticError);
+            WebExceptionHandler.ERROR_PROPAGATOR.inject(propagation, headers::set);
+        }
         if (ex instanceof ErrorResponse frameworkError) {
             // 仅保留协议协商需要的头，诊断头不能绕过正文脱敏。
             for (final String name : List.of(

@@ -7,6 +7,7 @@ import com.kjs.wuli3.core.error.ErrorCodeException;
 import com.kjs.wuli3.core.error.builtin.CommonErrors;
 import com.kjs.wuli3.core.error.model.ErrorOrigin;
 import com.kjs.wuli3.core.error.model.ErrorVisibility;
+import com.kjs.wuli3.core.error.propagation.ErrorCodePropagator;
 import com.kjs.wuli3.core.error.resolver.ErrorResolver;
 import com.kjs.wuli3.propagation.accessor.InvocationContextAccessor;
 import com.kjs.wuli3.web.error.WebErrorMapper;
@@ -170,13 +171,39 @@ class WebErrorBoundaryTest {
         assertThat(ApiResponse.failure(carrier, "request", "secret").data()).isNull();
     }
 
+    /** 错误头传播默认关闭；开启后写入未脱敏传播字段，响应体仍执行可见性过滤。 */
+    @Test
+    void propagatesRawErrorHeadersOnlyWhenEnabled() {
+        final WebResponseProperties properties = new WebResponseProperties();
+        final WebExceptionHandler handler = WebErrorBoundaryTest.handler(List.of(), properties);
+        final MockHttpServletRequest request = new MockHttpServletRequest();
+        final ErrorCodeException error = new ErrorCodeException(CommonErrors.ILLEGAL_ARGUMENT, "secret")
+                .withVisibility(ErrorVisibility.INTERNAL);
+
+        assertThat(handler.handleException(error, request).getHeaders()).doesNotContainKey(ErrorCodePropagator.CODE);
+
+        properties.setErrorHeaderPropagationEnabled(true);
+        final var result = handler.handleException(error, request);
+        assertThat(result.getHeaders().getFirst(ErrorCodePropagator.CODE)).isEqualTo("COMMON.ILLEGAL_ARGUMENT");
+        assertThat(result.getHeaders().getFirst(ErrorCodePropagator.MESSAGE)).isEqualTo("secret");
+        assertThat(result.getHeaders().getFirst(ErrorCodePropagator.VISIBILITY)).isEqualTo("INTERNAL");
+        assertThat(((ApiResponse<?>) Objects.requireNonNull(result.getBody())).message())
+                .isEqualTo("请求未被接受");
+    }
+
     /** 创建使用真实 core 投影和 HTTP 分类的处理器。 */
     private static WebExceptionHandler handler(final List<WebErrorMapper> mappers) {
+        return WebErrorBoundaryTest.handler(mappers, new WebResponseProperties());
+    }
+
+    /** 创建使用指定响应配置的处理器。 */
+    private static WebExceptionHandler handler(
+            final List<WebErrorMapper> mappers, final WebResponseProperties properties) {
         final InvocationContextAccessor accessor = mock(InvocationContextAccessor.class);
         return new WebExceptionHandler(
                 new ApiResponseFactory(accessor, new ErrorResolver("")),
                 accessor,
-                new WebResponseProperties(),
+                properties,
                 List.of(),
                 new DefaultWebErrorStatusResolver(),
                 mappers);
