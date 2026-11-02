@@ -1,6 +1,6 @@
 # 从零创建一个 Wuli3 项目
 
-本文以 `demo-order` 为例，完成工程生成、构建、启动和 HTTP 增删改查。示例基于当前仓库的 `0.1.3-SNAPSHOT`、JDK 21、Gradle Wrapper 9.6.1 和 Spring Boot 3.5.15。命令使用 macOS/Linux shell；Windows 使用 `gradlew.bat`。
+本文以 `demo-order` 为例，完成工程生成、构建、启动和 HTTP 增删改查。示例基于当前仓库的 `1.0.0`、JDK 21、Gradle Wrapper 9.6.1 和 Spring Boot 3.5.15。命令使用 macOS/Linux shell；Windows 使用 `gradlew.bat`。
 
 ## 1. 先准备可解析的制品
 
@@ -13,7 +13,7 @@ Wuli3 的生成器、BOM、starter 与构建约定插件都需要从 Maven 仓�
 在 **Wuli3 仓库根目录**执行：
 
 ```bash
-./gradlew publishToMavenLocal :build-logic:publishToMavenLocal
+./gradlew publishToMavenLocal :wuli3-build-logic:publishToMavenLocal
 ```
 
 这会发布业务库、BOM、生成器和构建插件。只发布 BOM 不足以启动生成的工程；BOM 只管理版本，不包含 starter 或插件实现。发布到本机仅供开发验证，不会上传公司仓库。
@@ -24,9 +24,9 @@ Wuli3 的生成器、BOM、starter 与构建约定插件都需要从 Maven 仓�
 
 确认仓库同时包含以下制品及其依赖：
 
-- `com.kjs.wuli3:wuli3-ddd-generator:0.1.3-SNAPSHOT`。
-- `com.kjs.wuli3:wuli3-dependencies:0.1.3-SNAPSHOT` 和要使用的 Wuli3 库。
-- 对应版本的 `build-logic` 实现及 Gradle 插件 marker。
+- `com.kjs.wuli3:wuli3-ddd-generator:1.0.0`。
+- `com.kjs.wuli3:wuli3-dependencies:1.0.0` 和要使用的 Wuli3 库。
+- 对应版本的 `wuli3-build-logic` 实现及 Gradle 插件 marker。
 
 JBang 的 `--repos` 只影响生成器自身解析，**不会自动修改生成工程的仓库配置**。工程生成后，在其 `settings.gradle.kts` 中同时为 `pluginManagement.repositories` 和 `dependencyResolutionManagement.repositories` 加入公司仓库。下面是需要合并到已有文件的片段，URL 必须替换为实际地址：
 
@@ -60,10 +60,10 @@ dependencyResolutionManagement {
 
 ```bash
 jbang --repos mavenlocal \
-  com.kjs.wuli3:wuli3-ddd-generator:0.1.3-SNAPSHOT generate \
+  com.kjs.wuli3:wuli3-ddd-generator:1.0.0 generate \
   --service demo-order --package com.example.order --domain order \
   --persistence none --messaging none --rpc none --registry none \
-  --wuli3-version 0.1.3-SNAPSHOT --build-logic-version 0.1.3-SNAPSHOT \
+  --wuli3-version 1.0.0 --build-logic-version 1.0.0 \
   --output .
 ```
 
@@ -75,7 +75,7 @@ jbang --repos mavenlocal \
 
 ```bash
 ./gradlew :wuli3-ddd-generator:run \
-  --args="generate --service demo-order --package com.example.order --domain order --persistence none --messaging none --rpc none --registry none --wuli3-version 0.1.3-SNAPSHOT --build-logic-version 0.1.3-SNAPSHOT --output $PWD/.."
+  --args="generate --service demo-order --package com.example.order --domain order --persistence none --messaging none --rpc none --registry none --wuli3-version 1.0.0 --build-logic-version 1.0.0 --output $PWD/.."
 ```
 
 直接运行生成器只解决“生成文件”，生成工程构建时仍需要第一节准备的 BOM、插件和库。
@@ -182,7 +182,7 @@ java -jar bootstrap/build/libs/bootstrap.jar
 | `domain` | `domain.order.Order`、`OrderRepository` | 聚合、不变量、领域行为和聚合仓储接口，不引入 Spring |
 | `api` | `api.dto.order.OrderStatusDto`、`api.facade.OrderFacade` | 内部调用契约与传播对象 |
 | `app` | `app.service.order.OrderService`、`app.repository.order.OrderQueryRepository` | 完整用例、事务边界和本地查询接口 |
-| `infra` | `infra.persistence.order.OrderRepositoryImpl`、`OrderQueryRepositoryImpl` | 仓储实现、持久化转换；外部系统适配放 `infra.acl` |
+| `infra` | `infra.persistence.order.OrderRepositoryImpl`、`OrderQueryRepositoryImpl` | 仓储实现、持久化转换；外部系统适配放 `infra.gateway` |
 | `adapter` | `adapter.api.order.OrderApi` | HTTP、MQ、定时任务入口；解析协议后委托应用服务 |
 | `bootstrap` | `OrderServiceApplication`、`application.yml` | 启动与最终装配、部署配置、RPC 发布 |
 
@@ -200,7 +200,7 @@ java -jar bootstrap/build/libs/bootstrap.jar
 
 ```kotlin
 dependencies {
-    implementation(platform("com.kjs.wuli3:wuli3-dependencies:0.1.3-SNAPSHOT"))
+    implementation(platform("com.kjs.wuli3:wuli3-dependencies:1.0.0"))
     implementation("com.kjs.wuli3:wuli3-core")
     implementation("com.kjs.wuli3:wuli3-web-spring-boot-starter")
 }
@@ -218,7 +218,7 @@ BOM 约束这些库的版本，允许省略各自的版本号；使用生成工�
     <dependency>
       <groupId>com.kjs.wuli3</groupId>
       <artifactId>wuli3-dependencies</artifactId>
-      <version>0.1.3-SNAPSHOT</version>
+      <version>1.0.0</version>
       <type>pom</type>
       <scope>import</scope>
     </dependency>
@@ -246,11 +246,11 @@ Web starter 会带来统一响应、异常映射和请求上下文等行为。�
 | 现象 | 检查方向 |
 | --- | --- |
 | JBang 找不到生成器 | 制品是否已发布；JBang 是否配置正确仓库 |
-| Gradle 找不到约定插件 | 是否发布 build-logic 和 plugin marker；是否配置 `pluginManagement.repositories` |
+| Gradle 找不到约定插件 | 是否发布 wuli3-build-logic 和 plugin marker；是否配置 `pluginManagement.repositories` |
 | 找不到 BOM/starter | 不要只发布 BOM；检查工程依赖仓库和版本 |
 | 生成器拒绝输出目录 | 输出父目录下的同名服务目录必须不存在或为空 |
 | 启动端口冲突 | 同时检查业务 `8080` 和管理 `8099` 端口 |
 | JSON 绑定失败 | `id` 是对象，状态枚举使用 `ACTIVE`/`INACTIVE`，分页字段是 `pageNumber`/`pageSize` |
 | 重启后数据没了 | `persistence=none` 是进程内示例；持久化需要 MySQL 等实际实现 |
 
-完整生成选项见 [生成器指南](../wuli3-ddd-generator.md)，依赖接入细节见 [BOM 指南](../wuli3-dependencies.md)，构建门禁与插件配置见 [构建约定指南](../build-logic.md)。工具和扩展点的按场景示例从 [指南首页](../README.md) 继续阅读。
+完整生成选项见 [生成器指南](../wuli3-ddd-generator.md)，依赖接入细节见 [BOM 指南](../wuli3-dependencies.md)，构建门禁与插件配置见 [构建约定指南](../wuli3-build-logic.md)。工具和扩展点的按场景示例从 [指南首页](../README.md) 继续阅读。

@@ -1,7 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
 pluginManagement {
-    includeBuild("build-logic")
+    includeBuild("wuli3-build-logic")
     repositories {
         gradlePluginPortal()
         mavenCentral()
@@ -41,4 +41,5 @@ include(
     "wuli3-dubbo-spring-boot-starter",
     "wuli3-openfeign-spring-boot-starter",
     "wuli3-ddd-generator",
+    "wuli3-docs",
 )

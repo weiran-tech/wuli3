@@ -12,7 +12,7 @@
 
 | 文档 | 用途 |
 | --- | --- |
-| [DDD 领域驱动约定指南](ddd-conventions.md) | 七模块职责、CQRS、Service、仓储、ACL、对象契约与自动架构门禁。 |
+| [DDD 领域驱动约定指南](ddd-conventions.md) | 七模块职责、CQRS、Service、仓储、Gateway、对象契约与自动架构门禁。 |
 
 ## 跨模块设计讨论
 
@@ -24,7 +24,7 @@
 
 | 文档 | 用途 |
 | --- | --- |
-| [build-logic](build-logic.md) | Gradle Java、Spring、质量和发布约定插件。 |
+| [wuli3-build-logic](wuli3-build-logic.md) | Gradle Java、Spring、质量和发布约定插件。 |
 | [wuli3-dependencies](wuli3-dependencies.md) | Gradle Platform 与 Maven BOM。 |
 | [wuli3-ddd-generator](wuli3-ddd-generator.md) | 生成单体多模块 DDD 服务和模块边界测试。 |
 
@@ -71,7 +71,7 @@ Gradle 项目推荐先导入 BOM，再声明无版本模块依赖：
 
 ```kotlin
 dependencies {
-    implementation(platform("com.kjs.wuli3:wuli3-dependencies:0.1.3-SNAPSHOT"))
+    implementation(platform("com.kjs.wuli3:wuli3-dependencies:1.0.0"))
     implementation("com.kjs.wuli3:wuli3-core")
 }
 ```

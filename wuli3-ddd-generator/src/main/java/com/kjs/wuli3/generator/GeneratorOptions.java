@@ -13,6 +13,7 @@ import javax.lang.model.SourceVersion;
  */
 record GeneratorOptions(
         String service,
+        String modulePrefix,
         String basePackage,
         String domain,
         String persistence,
@@ -27,10 +28,11 @@ record GeneratorOptions(
     static final String DEFAULT_PERSISTENCE = "none";
     static final String DEFAULT_MESSAGING = "none";
     static final String DEFAULT_SORT_FIELDS = "id,status";
-    static final String DEFAULT_WULI3_VERSION = "0.1.3-SNAPSHOT";
-    static final String DEFAULT_BUILD_LOGIC_VERSION = "0.1.3-SNAPSHOT";
+    static final String DEFAULT_WULI3_VERSION = "1.0.0";
+    static final String DEFAULT_BUILD_LOGIC_VERSION = "1.0.0";
     private static final List<String> KEYS = List.of(
             "service",
+            "module-prefix",
             "package",
             "domain",
             "persistence",
@@ -65,13 +67,17 @@ record GeneratorOptions(
         if (!service.matches("[a-z][a-z0-9]*(?:-[a-z0-9]+)*")) {
             throw new IllegalArgumentException("service 必须是小写字母、数字和单个连字符组成的名称");
         }
+        final String modulePrefix = values.getOrDefault("module-prefix", GeneratorOptions.defaultModulePrefix(service));
+        if (!modulePrefix.matches("[a-z][a-z0-9]*(?:-[a-z0-9]+)*")) {
+            throw new IllegalArgumentException("module-prefix 必须是小写字母、数字和单个连字符组成的名称");
+        }
         if (!domain.matches("[a-z][a-z0-9]*(?:-[a-z0-9]+)*")
-                || !SourceVersion.isName(domain.replace('-', '_'), SourceVersion.RELEASE_21)) {
+                || !SourceVersion.isName(GeneratorOptions.toDomainPackage(domain), SourceVersion.RELEASE_21)) {
             throw new IllegalArgumentException("domain 必须是小写字母、数字和单个连字符组成的名称，且转换后必须是合法 Java 包名");
         }
-        if (!basePackage.matches("[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*")
+        if (!basePackage.matches("[a-z]+(\\.[a-z][a-z0-9]*)*")
                 || !SourceVersion.isName(basePackage, SourceVersion.RELEASE_21)) {
-            throw new IllegalArgumentException("package 必须是合法的小写 Java 包名");
+            throw new IllegalArgumentException("package 必须符合 Checkstyle 包名规则，首段仅含小写字母，后续各段以小写字母开头且仅含小写字母和数字");
         }
 
         final String persistence = values.getOrDefault("persistence", GeneratorOptions.DEFAULT_PERSISTENCE);
@@ -99,6 +105,7 @@ record GeneratorOptions(
                 Path.of(values.getOrDefault("output", ".")).toAbsolutePath().normalize();
         return new GeneratorOptions(
                 service,
+                modulePrefix,
                 basePackage,
                 domain,
                 persistence,
@@ -128,11 +135,25 @@ record GeneratorOptions(
         return fields;
     }
 
+    /** 领域包名沿用 Checkstyle 规则，移除服务命名中的连字符。 */
+    String domainPackage() {
+        return GeneratorOptions.toDomainPackage(this.domain);
+    }
+
+    private static String toDomainPackage(final String domain) {
+        return domain.replace("-", "");
+    }
+
     static String toTypeName(final String value) {
         final StringBuilder result = new StringBuilder();
         for (final String part : value.split("-", -1)) {
             result.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
         }
         return result.toString();
+    }
+
+    /** 为模块目录生成简洁前缀；服务身份仍保留完整服务名。 */
+    static String defaultModulePrefix(final String service) {
+        return service.endsWith("-service") ? service.substring(0, service.length() - "-service".length()) : service;
     }
 }

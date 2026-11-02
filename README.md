@@ -4,11 +4,13 @@ wuli3 分布式项目脚手架底座。项目使用 JDK 21、Gradle 9.6.0、多�
 
 首次使用请阅读 [从建项目到业务开发教程](guide/tutorial/README.md)：创建并运行项目、使用工具类、接入扩展点与示例代码。
 
+设计文档站源码位于 [`wuli3-docs`](wuli3-docs/)，用于通过架构图、核心模型图、模块说明和代码示例解释 Wuli3 的设计。
+
 ## 模块
 
 | 模块 | 说明 |
 | --- | --- |
-| [`build-logic`](guide/build-logic.md) | Gradle 约定插件，统一 Java、Spring、质量检测和发布规则。 |
+| [`wuli3-build-logic`](guide/wuli3-build-logic.md) | Gradle 约定插件，统一 Java、Spring、质量检测和发布规则。 |
 | [`wuli3-ddd-generator`](guide/wuli3-ddd-generator.md) | 通过 CLI 或 Gradle 任务生成带 Shared Kernel 和架构门禁的单体多模块 DDD 服务。 |
 | [`wuli3-dependencies`](guide/wuli3-dependencies.md) | 统一依赖版本平台。 |
 | [`wuli3-core`](guide/wuli3-core.md) | 无 Spring 依赖的错误模型、断言、ID、时间和 Stream 工具。 |
@@ -59,7 +61,6 @@ wuli3 分布式项目脚手架底座。项目使用 JDK 21、Gradle 9.6.0、多�
 ./gradlew check
 ./gradlew clean check
 ./gradlew verifyBomConsumers
-./gradlew apiCompatibilityCheck
 ```
 
 ## 发布与消费验证
@@ -87,7 +88,7 @@ CI 推荐执行顺序：
 
 ```bash
 ./gradlew --no-daemon clean check --continue
-./gradlew --no-daemon verifyBomConsumers apiCompatibilityCheck --warning-mode fail
+./gradlew --no-daemon verifyBomConsumers --warning-mode fail
 ```
 
 CI 环境需要 JDK 21、Maven 和 Maven Central 网络访问。消费验证只使用构建目录中的临时 Maven 仓库，不需要正式仓库凭据。
@@ -112,7 +113,7 @@ Maven 项目引入：
     <dependency>
       <groupId>com.kjs.wuli3</groupId>
       <artifactId>wuli3-dependencies</artifactId>
-      <version>0.1.3-SNAPSHOT</version>
+      <version>1.0.0</version>
       <type>pom</type>
       <scope>import</scope>
     </dependency>

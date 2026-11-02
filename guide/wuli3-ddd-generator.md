@@ -18,7 +18,7 @@ OMX 配置。
 外部项目无需检出本仓库，直接用 [JBang](https://www.jbang.dev/) 从 Maven 仓库拉取生成器执行：
 
 ```bash
-jbang com.kjs.wuli3:wuli3-ddd-generator:0.1.3-SNAPSHOT generate \
+jbang com.kjs.wuli3:wuli3-ddd-generator:1.0.0 generate \
   --service demo-web --package com.demo.web --domain order \
   --persistence none --messaging none --output .
 ```
@@ -27,7 +27,7 @@ JBang 默认从 Maven Central 解析。构件发布在内部仓库时，用 `--r
 
 ```bash
 jbang --repos <内部仓库URL>,mavenlocal \
-  com.kjs.wuli3:wuli3-ddd-generator:0.1.3-SNAPSHOT generate \
+  com.kjs.wuli3:wuli3-ddd-generator:1.0.0 generate \
   --service demo-web --package com.demo.web --domain order \
   --persistence none --messaging none --output .
 ```
@@ -37,6 +37,7 @@ jbang --repos <内部仓库URL>,mavenlocal \
 | 参数                    | 必填 | 可选值                             | 默认值           | 说明                                                         |
 |-------------------------|------|------------------------------------|------------------|--------------------------------------------------------------|
 | `--service`             | 是   | 小写字母开头，可含数字和单个连字符 | —                | 服务名，同时作为生成目录名                                   |
+| `--module-prefix`       | 否   | 小写字母开头，可含数字和单个连字符 | 服务名去掉末尾 `-service` | 模块目录和工程名的前缀；可显式使用完整服务名恢复旧命名 |
 | `--package`             | 是   | 合法的小写 Java 包名               | —                | 生成源码的基础包名                                           |
 | `--domain`              | 是   | 小写字母开头，可含数字和单个连字符 | —                | 领域名                                                       |
 | `--persistence`         | 否   | `none`、`mysql`                    | `none`           | `mysql` 额外生成 MyBatis-Plus PO/Mapper 并引入 MySQL starter |
@@ -44,18 +45,21 @@ jbang --repos <内部仓库URL>,mavenlocal \
 | `--rpc`                 | 否   | `none`、`dubbo`                    | `none`           | `dubbo` 在 app.facade 生成 `@DubboService` 发布能力并引入 Dubbo starter |
 | `--registry`            | 否   | `none`、`nacos`                    | `none`           | `nacos` 作为 Dubbo 注册中心；必须同时设置 `--rpc dubbo`     |
 | `--sort-fields`         | 否   | 逗号分隔的数据库字段名            | `id,status`      | 查询分页允许排序的字段白名单，生成到 infra 查询实现             |
-| `--wuli3-version`       | 否   | 已发布的 Wuli3 版本                | `0.1.3-SNAPSHOT` | Wuli3 BOM 与 starter 版本                                    |
-| `--build-logic-version` | 否   | 已发布的约定插件版本               | `0.1.3-SNAPSHOT` | Gradle 约定插件版本                                          |
+| `--wuli3-version`       | 否   | 已发布的 Wuli3 版本                | `1.0.0` | Wuli3 BOM 与 starter 版本                                    |
+| `--build-logic-version` | 否   | 已发布的约定插件版本               | `1.0.0` | Gradle 约定插件版本                                          |
 | `--output`              | 否   | 目录路径                           | `.`              | 服务的父目录                                                 |
 
 `--output` 是父目录不是工程目录：上例 `--output .` 生成的是 `./demo-web/`。目标目录必须不存在或为空，生成器不会覆盖已有业务文件。
+
+`--package` 沿用 Checkstyle 的包名规则：首段仅含小写字母，后续各段以小写字母开头且仅含小写字母和数字，不允许下划线和 Java 关键字。
+领域名中的连字符生成 Java 包名时会移除，例如 `product-catalog` 对应包名 `productcatalog`、类型名 `ProductCatalog`；MySQL 表名独立使用 `product_catalog`。
 
 ### 示例
 
 无外部基础设施的最小工程：
 
 ```bash
-jbang com.kjs.wuli3:wuli3-ddd-generator:0.1.3-SNAPSHOT generate \
+jbang com.kjs.wuli3:wuli3-ddd-generator:1.0.0 generate \
   --service demo-web --package com.demo.web --domain order \
   --persistence none --messaging none --output .
 ```
@@ -63,7 +67,7 @@ jbang com.kjs.wuli3:wuli3-ddd-generator:0.1.3-SNAPSHOT generate \
 MySQL 持久化 + RocketMQ，生成到指定父目录：
 
 ```bash
-jbang com.kjs.wuli3:wuli3-ddd-generator:0.1.3-SNAPSHOT generate \
+jbang com.kjs.wuli3:wuli3-ddd-generator:1.0.0 generate \
   --service order-service --package com.example.order --domain order \
   --persistence mysql --messaging rocketmq --output ~/projects/order
 ```
@@ -71,10 +75,10 @@ jbang com.kjs.wuli3:wuli3-ddd-generator:0.1.3-SNAPSHOT generate \
 RabbitMQ、固定 Wuli3 版本：
 
 ```bash
-jbang com.kjs.wuli3:wuli3-ddd-generator:0.1.3-SNAPSHOT generate \
+jbang com.kjs.wuli3:wuli3-ddd-generator:1.0.0 generate \
   --service pay-service --package com.example.pay --domain payment \
   --persistence mysql --messaging rabbitmq \
-  --wuli3-version 0.1.3-SNAPSHOT --output .
+  --wuli3-version 1.0.0 --output .
 ```
 
 生成完成后进入工程目录验证：
@@ -89,8 +93,9 @@ cd demo-web
 
 ## 模块边界
 
-生成工程包含七个 Gradle 模块，模块目录和工程名统一带服务名前缀：服务 `demo-web` 生成 `demo-web-shared-kernel`、
+生成工程包含七个 Gradle 模块，模块目录和工程名统一使用模块前缀，默认从服务名去掉末尾的 `-service`；不带该后缀时使用完整服务名：服务 `demo-web` 生成 `demo-web-shared-kernel`、
 `demo-web-domain`、`demo-web-api`、`demo-web-app`、`demo-web-infra`、`demo-web-adapter`、`demo-web-bootstrap`。
+服务 `foxtail-identity-service` 默认生成 `foxtail-identity-shared-kernel` 等模块；可用 `--module-prefix` 显式覆盖。根目录、根工程名、应用服务名和启动类仍使用完整服务名。
 `bootstrap` 模块的可执行 jar 仍固定为 `bootstrap.jar`，Dockerfile 和部署脚本无需感知前缀。启动类以服务名命名，
 例如 `demo-web` 生成 `DemoWebApplication`，对应测试为 `DemoWebApplicationTest`。
 
@@ -107,7 +112,7 @@ shared-kernel -> domain / api -> app -> infra
   `save`（新增或修改）、`findById`、`deleteById` 和 `page`；`save` 统一表达新增与修改。
 - `api` 通过 `api` 依赖导出 `wuli3-pagination`，分页契约可供应用、HTTP 和 RPC 复用；MyBatis-Plus 类型只出现在 infra。
 - `app.repository` 只定义 QueryRepository；`domain.gateway` 定义本地语义的外部业务能力。
-- `infra` 实现两类仓储与 ACL；`infra.config` 管理 Mapper 扫描和技术 Bean。
+- `infra` 实现两类仓储与 Gateway；`infra.config` 管理 Mapper 扫描和技术 Bean。
 - `adapter.api` 提供 HTTP 入口，类名以 Api 结尾；`adapter.mq`、`adapter.job` 提供消息消费与任务入口。
 - `bootstrap` 负责启动、配置选择和最终组装；Dubbo 选项下 RPC 发布由 `app.facade` 上的 `@DubboService` 完成。
 
@@ -119,10 +124,11 @@ HTTP Api 和 FacadeImpl 复用 Service 中的完整业务用例及事务边界�
 查询通过 app QueryRepository 返回投影，写入通过 domain Repository 加载聚合、执行业务行为并保存。
 不因分层机械复制 Request/Response/Command/Result；语义一致时可复用 DTO，真实契约差异出现时才转换。
 
-`domain.gateway` 与 `infra.acl` 隔离外部系统的模型、状态和错误；跨系统查询也属于 ACL，不归入本地查询仓储。
+`domain.gateway.XxxGateway` 与 `infra.gateway.XxxGatewayImpl` 隔离外部系统的模型、状态和错误；
+服务间调用、外部系统调用和跨系统查询统一通过 Gateway，不归入本地查询仓储。
 不生成 `app.acl`。外部服务 API 只在 infra 引入，通过 `wuli3.ddd.external-api.coordinates` 与
-`wuli3.ddd.external-api.packages` 登记依赖坐标和包前缀；详细配置与迁移步骤见 [ACL 约定](ddd-conventions.md#8-acl-与基础设施配置)。
-所有约定包（包括空的 mq/job/acl）均生成中文 `package-info.java`，明确职责、依赖与禁止事项。
+`wuli3.ddd.external-api.packages` 登记依赖坐标和包前缀；详细配置与迁移步骤见 [Gateway 约定](ddd-conventions.md#8-gateway-与基础设施配置)。
+所有约定包（包括空的 mq/job/gateway）均生成中文 `package-info.java`，明确职责、依赖与禁止事项。
 
 ### 领域模型与 Service 扩展
 
@@ -145,7 +151,7 @@ HTTP Api 和 FacadeImpl 复用 Service 中的完整业务用例及事务边界�
 生成项目选择 `messaging=none` 时仍保留空的 `adapter.mq` 约定包，但不会引入消息依赖。
 
 根工程统一应用 Java 约定插件：`domain`、`api` 使用 `com.kjs.wuli3.java-conventions`，
-Spring 模块使用 `com.kjs.wuli3.spring-conventions`，各模块先应用 `com.kjs.wuli3.ddd-conventions`。
+Spring 模块使用 `com.kjs.wuli3.java-spring-conventions`，各模块先应用 `com.kjs.wuli3.ddd-conventions`。
 各模块共享 Java 21、BOM、测试和质量门禁；`bootstrap` 额外应用 Spring Boot 插件。
 构建脚本继续使用 Gradle DSL 的 `.gradle.kts`，不向业务模块应用 Kotlin 编译插件。
 
@@ -153,7 +159,7 @@ Spring 模块使用 `com.kjs.wuli3.spring-conventions`，各模块先应用 `com
 
 DDD 架构检查由 `DddConventionsPlugin` 统一提供并接入 `check`，生成工程不复制门禁实现。
 
-`verifyDddDependencies` 和 `verifyDddTypes` 对全部七模块检查生产依赖声明和字节码引用，按可达方向允许：
+`verifyModuleDependencies` 和 `verifyTypeBoundaries` 对全部七模块检查生产依赖声明和字节码引用，按可达方向允许：
 
 | 模块 | 允许依赖的业务模块 |
 | --- | --- |
@@ -181,7 +187,7 @@ wuli3.ddd.types.infra-app-allowed-suffixes=QueryRepository,Query,DTO
 
 基础包未配置时兼容回退到 `wuli3.conventions.nullaway.annotated-packages`，要求单一有效包名，拒绝空值和多个包。
 
-可选任务 `verifyDddTransactions` 默认关闭。开启后仅允许 `app.service` 以及 `infra.persistence` 中以 `RepositoryImpl` 结尾的仓储实现，在类或方法上直接声明 Spring `@Transactional`。不要求所有 Service 声明事务。
+可选任务 `verifyTransactionBoundaries` 默认关闭。开启后仅允许 `app.service` 以及 `infra.persistence` 中以 `RepositoryImpl` 结尾的仓储实现，在类或方法上直接声明 Spring `@Transactional`。不要求所有 Service 声明事务。
 该审查检查直接注解位置，不推断组合注解、继承事务、编程式事务、事务传播语义或运行时代理行为。
 
 事务包和基础设施实现类后缀可通过上面的 Gradle 属性扩展；`infra` 引用 `app` 类型的后缀白名单也可通过
@@ -189,8 +195,8 @@ wuli3.ddd.types.infra-app-allowed-suffixes=QueryRepository,Query,DTO
 
 类型检查基于编译后字节码，不能识别反射字符串形成的动态依赖；声明检查不等同于完整传递依赖树扫描。
 
-模板版本为 2.2.0，模块目录带服务名前缀，包结构不兼容旧模板；Dubbo 发布位于 app.facade。仅生成新项目，不覆盖或自动迁移已有项目。
-使用时需要先发布包含 DDD 约定检查插件的 build-logic 版本，再通过 `--build-logic-version` 指定。
+模板版本为 2.3.0，模块目录使用独立模块前缀，包结构不兼容旧模板；Dubbo 发布位于 app.facade。仅生成新项目，不覆盖或自动迁移已有项目。
+使用时需要先发布包含 DDD 约定检查插件的 wuli3-build-logic 版本，再通过 `--build-logic-version` 指定。
 
 ## Git 钩子
 
