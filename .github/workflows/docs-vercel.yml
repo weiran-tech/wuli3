@@ -63,3 +63,16 @@ jobs:
         run: |
           curl --fail --silent --show-error --retry 3 --max-time 30 https://wuli3.wulicode.com/ --output /dev/null
           curl --fail --silent --show-error --retry 3 --max-time 30 https://wuli3.wulicode.com/getting-started/quick-start --output /dev/null
+
+      # 发布验证成功后断开原生 Git 关联，避免 fork 旧配置再次触发部署授权。
+      - name: Keep deployments managed by Actions only
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          project_settings="$RUNNER_TEMP/vercel-project.json"
+          trap 'rm -f "$project_settings"' EXIT
+          vercel api "/v9/projects/${VERCEL_PROJECT_ID}?teamId=${VERCEL_ORG_ID}" > "$project_settings"
+          has_git_link=$(node -e 'const fs = require("node:fs"); const project = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); if (project.id !== process.env.VERCEL_PROJECT_ID) throw new Error("Unexpected Vercel project"); console.log(Boolean(project.link));' "$project_settings")
+          if [ "$has_git_link" = true ]; then
+            vercel git disconnect --yes --scope imvkmarks-projects
+          fi
