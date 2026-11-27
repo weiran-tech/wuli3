@@ -7,6 +7,7 @@ import com.wulicode.wuli3.permission.model.PermissionCode;
 import com.wulicode.wuli3.permission.model.PermissionKey;
 import com.wulicode.wuli3.permission.model.PermissionToken;
 import com.wulicode.wuli3.permission.model.PrincipalPermissions;
+import com.wulicode.wuli3.permission.model.definition.PermissionResourceDefinition;
 import com.wulicode.wuli3.permission.spi.PrincipalPermissionLoader;
 import com.wulicode.wuli3.permission.store.LocalPermissionStore;
 import com.wulicode.wuli3.propagation.context.ContextKey;
@@ -16,6 +17,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * 读取当前可信上下文并加载主体权限的统一鉴权入口；每次判断独立加载，缓存策略由加载器提供。
@@ -83,8 +85,31 @@ public final class PermissionChecker {
                 ? keys.stream().allMatch(permissions::contains)
                 : keys.stream().anyMatch(permissions::contains);
         if (!allowed) {
-            throw new ErrorCodeException(PermissionErrors.FORBIDDEN);
+            throw new ErrorCodeException(PermissionErrors.FORBIDDEN, this.describeMissing(keys, permissions, all));
         }
+    }
+
+    /** 将未满足的权限翻译为“资源描述 : 动作描述”，供调用方直接展示。 */
+    private String describeMissing(
+            final Collection<PermissionKey> keys, final PrincipalPermissions granted, final boolean all) {
+        final String descriptions = keys.stream()
+                .filter(key -> !granted.contains(key))
+                .map(this::describe)
+                .distinct()
+                .collect(Collectors.joining("、"));
+        return (all ? "缺少权限：" : "缺少任一权限：") + descriptions;
+    }
+
+    private String describe(final PermissionKey key) {
+        final PermissionResourceDefinition resource = this.store.resource(key.resourceCode());
+        if (resource == null) {
+            return key.resourceCode();
+        }
+        return resource.permissions().stream()
+                .filter(action -> action.actionCode() == key.actionCode())
+                .findFirst()
+                .map(action -> resource.description() + " : " + action.description())
+                .orElse(resource.description());
     }
 
     private Optional<PermissionToken> currentToken() {

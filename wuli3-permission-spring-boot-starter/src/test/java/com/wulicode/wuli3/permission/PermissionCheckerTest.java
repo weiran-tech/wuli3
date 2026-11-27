@@ -77,6 +77,24 @@ class PermissionCheckerTest {
     }
 
     @Test
+    void reportsMissingPermissionsAsResourceAndActionDescriptions() {
+        this.auth("deny", () -> {
+            assertThatThrownBy(() -> this.checker.require(this.read))
+                    .isInstanceOfSatisfying(
+                            ErrorCodeException.class,
+                            exception -> assertThat(exception.getMessage()).isEqualTo("缺少权限：订单 : 查询订单"));
+            assertThatThrownBy(() -> this.checker.requireAll(List.of(this.read, this.write)))
+                    .isInstanceOfSatisfying(
+                            ErrorCodeException.class,
+                            exception -> assertThat(exception.getMessage()).isEqualTo("缺少权限：订单 : 查询订单、订单"));
+            assertThatThrownBy(() -> this.checker.requireAny(List.of(this.write)))
+                    .isInstanceOfSatisfying(
+                            ErrorCodeException.class,
+                            exception -> assertThat(exception.getMessage()).isEqualTo("缺少任一权限：订单"));
+        });
+    }
+
+    @Test
     void missingTokenDoesNotLoadAndRequiresAuthentication() {
         this.assertUnauthorized();
         this.backend.run(ContextState.of(new AuthContext(PrincipalType.ADMIN, "1")), this::assertUnauthorized);
