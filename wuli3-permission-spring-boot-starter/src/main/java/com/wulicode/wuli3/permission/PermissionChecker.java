@@ -89,13 +89,14 @@ public final class PermissionChecker {
         }
     }
 
-    /** 将未满足的权限翻译为“资源描述 : 动作描述”，供调用方直接展示。 */
+    /** 将未满足的权限翻译为“资源描述:动作描述”，供调用方直接展示。 */
     private String describeMissing(final Collection<PermissionKey> keys, final PrincipalPermissions granted) {
-        return keys.stream()
+        final String descriptions = keys.stream()
                 .filter(key -> !granted.contains(key))
                 .map(this::describe)
                 .distinct()
                 .collect(Collectors.joining("、"));
+        return "缺少权限 - " + descriptions;
     }
 
     private String describe(final PermissionKey key) {
@@ -106,7 +107,7 @@ public final class PermissionChecker {
         return resource.permissions().stream()
                 .filter(action -> action.actionCode() == key.actionCode())
                 .findFirst()
-                .map(action -> resource.description() + " : " + action.description())
+                .map(action -> resource.description() + ":" + action.description())
                 .orElse(resource.description());
     }
 
