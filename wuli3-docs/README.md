@@ -33,6 +33,8 @@ npm run docs:preview
 
 `vercel.json` 完全关闭 Vercel Git 自动部署，由 GitHub Actions 作为唯一发布入口，避免 fork 的 `main` 命中分支白名单并在 PR 阶段出现部署授权提示。
 
+首次通过 Actions 发布并验证成功后，工作流会断开项目的原生 Git 关联，避免 fork 沿用旧配置再次触发授权。后续发布继续通过固定项目 ID 和 Token 完成，不依赖 Git 关联。
+
 Vercel 使用 `npm ci` 安装依赖、`npm run docs:build` 构建，发布 `build/docs/`。站点使用根路径 `/`，`cleanUrls` 支持直接访问不带 `.html` 的章节地址。GitHub Pages 工作流已移除。
 
 ## 内容与图示维护

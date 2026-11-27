@@ -22,6 +22,8 @@ GitHub Pages 工作流已移除，文档发布不再依赖 Pages 权限、环境
 
 发布流程先拉取 Vercel 生产配置，在 Actions 中构建，再通过 `vercel deploy --prebuilt --prod` 上传静态产物。fork PR 不执行含发布凭据的步骤，也不需要为 PR 授权 Vercel 部署。
 
+页面验证成功后，工作流检查并断开 Vercel 项目的原生 Git 关联。已断开时直接跳过，后续部署仍通过项目 ID 和 Token 执行，fork 中未更新的配置也无法触发原生部署请求。
+
 ## 静态产物检查
 
 部署前检查：
