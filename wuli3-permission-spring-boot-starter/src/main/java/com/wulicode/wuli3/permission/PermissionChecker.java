@@ -85,19 +85,17 @@ public final class PermissionChecker {
                 ? keys.stream().allMatch(permissions::contains)
                 : keys.stream().anyMatch(permissions::contains);
         if (!allowed) {
-            throw new ErrorCodeException(PermissionErrors.FORBIDDEN, this.describeMissing(keys, permissions, all));
+            throw new ErrorCodeException(PermissionErrors.FORBIDDEN, this.describeMissing(keys, permissions));
         }
     }
 
     /** 将未满足的权限翻译为“资源描述 : 动作描述”，供调用方直接展示。 */
-    private String describeMissing(
-            final Collection<PermissionKey> keys, final PrincipalPermissions granted, final boolean all) {
-        final String descriptions = keys.stream()
+    private String describeMissing(final Collection<PermissionKey> keys, final PrincipalPermissions granted) {
+        return keys.stream()
                 .filter(key -> !granted.contains(key))
                 .map(this::describe)
                 .distinct()
                 .collect(Collectors.joining("、"));
-        return (all ? "缺少权限：" : "缺少任一权限：") + descriptions;
     }
 
     private String describe(final PermissionKey key) {
