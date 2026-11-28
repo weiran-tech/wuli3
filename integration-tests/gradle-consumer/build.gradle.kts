@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    implementation(platform("com.wulicode.wuli3:wuli3-dependencies:1.1.1-SNAPSHOT"))
+    implementation(platform("com.wulicode.wuli3:wuli3-dependencies:1.1.2"))
     implementation("com.wulicode.wuli3:wuli3-core")
     implementation("com.wulicode.wuli3:wuli3-json")
     implementation("com.wulicode.wuli3:wuli3-event-core")
